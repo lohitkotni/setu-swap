@@ -19,7 +19,7 @@ const DEPLOYED_AT_OFFSET: u32 = 224;
 pub struct TimelocksLib;
 
 impl TimelocksLib {
-    pub fn set_deployed_at(timelocks: Timelocks, value: U256) -> Timelocks {
+    pub fn set_deployed_at(_env: &Env, timelocks: Timelocks, value: U256) -> Timelocks {
         let cleared = timelocks.shl(32).shr(32);
         let shifted_value = value.shl(DEPLOYED_AT_OFFSET);
         cleared.add(&shifted_value)

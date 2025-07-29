@@ -1,11 +1,8 @@
-#![no_std]
-mod timelocks;
-mod escrow;
 
-use soroban_sdk::{contract, contractimpl, Env, Address, U256, BytesN, contracttype};
-
-pub use timelocks::{Stage,TimelocksLib, Timelocks};
-pub use escrow::{EscrowContract,Immutables};
+use soroban_sdk::{contract, contractimpl, Env, Address, U256, BytesN};
+use crate::timelocks::{TimelocksLib,Stage};
+use crate::escrow::{Immutables};
+use crate::EscrowContract;
 
 #[contract]
 pub struct EscrowSrc;
@@ -17,7 +14,7 @@ impl EscrowSrc {
         access_token: Address,
         rescue_delay: U256,
     ) {
-        escrow::EscrowContract::constructor(env, access_token, rescue_delay);
+        EscrowContract::constructor(env, access_token, rescue_delay);
     }
 
     pub fn withdraw(
@@ -27,14 +24,14 @@ impl EscrowSrc {
         target: Address
     ) {
         // Authorization check
-        escrow::EscrowContract::only_taker(&env, &immutables);
+        EscrowContract::only_taker(&env, &immutables);
     
         // Time window checks
         let withdrawal_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::SrcWithdrawal as u32);
         let cancellation_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::SrcCancellation as u32);
         
-        escrow::EscrowContract::only_after(&env, withdrawal_time);
-        escrow::EscrowContract::only_before(&env, cancellation_time);
+        EscrowContract::only_after(&env, withdrawal_time);
+        EscrowContract::only_before(&env, cancellation_time);
     
         // Withdraw to the sender (equivalent to msg.sender)
         Self::_withdraw_to(&env, secret, &target, &immutables);
@@ -47,14 +44,14 @@ impl EscrowSrc {
         immutables: Immutables,
     ) {
         // Authorization check
-        escrow::EscrowContract::only_taker(&env, &immutables);
+        EscrowContract::only_taker(&env, &immutables);
     
         // Time window checks
         let withdrawal_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::SrcWithdrawal as u32);
         let cancellation_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::SrcCancellation as u32);
         
-        escrow::EscrowContract::only_after(&env, withdrawal_time);
-        escrow::EscrowContract::only_before(&env, cancellation_time);
+        EscrowContract::only_after(&env, withdrawal_time);
+        EscrowContract::only_before(&env, cancellation_time);
     
         // Withdraw to specified target address
         Self::_withdraw_to(&env, secret, &target, &immutables);
@@ -78,8 +75,8 @@ impl EscrowSrc {
         );
         
         // Verify time constraints
-        escrow::EscrowContract::only_after(&env, public_withdrawal_time);
-        escrow::EscrowContract::only_before(&env, cancellation_time);
+        EscrowContract::only_after(&env, public_withdrawal_time);
+        EscrowContract::only_before(&env, cancellation_time);
     
         // Withdraw to the taker's address
         Self::_withdraw_to(&env, secret, &immutables.taker, &immutables);
@@ -90,7 +87,7 @@ impl EscrowSrc {
         immutables: Immutables,
     ) {
         // Authorization check
-        escrow::EscrowContract::only_taker(&env, &immutables);
+        EscrowContract::only_taker(&env, &immutables);
     
         // Time window check for cancellation
         let cancellation_time = TimelocksLib::get(
@@ -98,7 +95,7 @@ impl EscrowSrc {
             immutables.timelocks.clone(), 
             Stage::SrcCancellation as u32
         );
-        escrow::EscrowContract::only_after(&env, cancellation_time);
+        EscrowContract::only_after(&env, cancellation_time);
     
         // Perform cancellation
         Self::_cancel(&env, &immutables);
@@ -115,7 +112,7 @@ impl EscrowSrc {
             immutables.timelocks.clone(), 
             Stage::SrcPublicCancellation as u32
         );
-        escrow::EscrowContract::only_after(&env, public_cancellation_time);
+        EscrowContract::only_after(&env, public_cancellation_time);
     
         // Perform cancellation
         Self::_cancel(&env, &immutables);
@@ -127,10 +124,10 @@ impl EscrowSrc {
         target: &Address,
         immutables: &Immutables,
     ) {
-        escrow::EscrowContract::only_valid_secret(env, &secret, immutables);
+        EscrowContract::only_valid_secret(env, &secret, immutables);
     
         // Transfer tokens to target
-        escrow::EscrowContract::uni_transfer(
+        EscrowContract::uni_transfer(
             env,
             &immutables.token,
             target,
@@ -138,7 +135,7 @@ impl EscrowSrc {
         );
     
         // Transfer safety deposit to the caller
-        escrow::EscrowContract::uni_transfer(
+        EscrowContract::uni_transfer(
             env,
             &immutables.token,
             &immutables.taker,
@@ -157,7 +154,7 @@ impl EscrowSrc {
         immutables: &Immutables,
     ) {
         // Transfer tokens back to maker (equivalent to IERC20(token).safeTransfer(maker, amount))
-        escrow::EscrowContract::uni_transfer(
+        EscrowContract::uni_transfer(
             env,
             &immutables.token,
             &immutables.maker,
@@ -165,7 +162,7 @@ impl EscrowSrc {
         );
     
         // Transfer safety deposit to caller (equivalent to _ethTransfer(msg.sender, safetyDeposit))
-        escrow::EscrowContract::uni_transfer(
+        EscrowContract::uni_transfer(
             env,
             &immutables.token,
             &immutables.taker,  // equivalent to msg.sender
