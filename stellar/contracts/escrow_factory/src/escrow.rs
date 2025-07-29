@@ -1,6 +1,6 @@
 use soroban_sdk::{contract, contractimpl, Env, Address, U256,BytesN, contracttype};
 use soroban_sdk::token::TokenClient;
-use crate::timelocks::{Timelocks, Stage,TimelocksLib};
+use crate::timelocks::{Timelocks,TimelocksLib};
 
 #[derive(Clone)]
 #[contracttype]
