@@ -1,8 +1,6 @@
-#![no_std]
-mod timelocks;
 use soroban_sdk::{contract, contractimpl, Env, Address, U256,BytesN, contracttype};
 use soroban_sdk::token::TokenClient;
-pub use timelocks::{Stage, TimelocksLib,Timelocks};
+use crate::timelocks::{Timelocks, Stage,TimelocksLib};
 
 #[derive(Clone)]
 #[contracttype]
@@ -30,7 +28,7 @@ pub struct EscrowContract;
 
 #[contractimpl]
 impl EscrowContract {
-    pub fn __constructor(
+    pub fn constructor(
         env: Env,
         access_token: Address,
         rescue_delay: U256,
@@ -78,69 +76,12 @@ impl EscrowContract {
         );
     }
 
-    pub fn withdraw(
-        env: Env,
-        secret: BytesN<32>,
-        immutables: Immutables,
-    ) {
-        // Authorization check
-        Self::only_taker(&env, &immutables);
-
-        // Time window checks
-        let withdrawal_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::DstWithdrawal as u32);
-        let cancellation_time = TimelocksLib::get(&env, immutables.timelocks.clone(), Stage::DstCancellation as u32);
-        
-        Self::only_after(&env, withdrawal_time);
-        Self::only_before(&env, cancellation_time);
-
-        // Perform withdrawal
-        Self::_withdraw(&env, secret, &immutables);
-    }
-
-     pub fn cancel(
-        env: Env,
-        immutables: Immutables,
-    ) {
-        // Authorization check
-        Self::only_taker(&env, &immutables);
-
-        // Time window check for cancellation
-        let cancellation_time = TimelocksLib::get(
-            &env, 
-            immutables.timelocks.clone(), 
-            Stage::DstCancellation as u32
-        );
-        Self::only_after(&env, cancellation_time);
-
-        // Transfer tokens back to taker
-        Self::uni_transfer(
-            &env,
-            &immutables.token,
-            &immutables.taker,
-            &immutables.amount
-        );
-
-        // Transfer safety deposit back to taker
-        Self::uni_transfer(
-            &env,
-            &immutables.token,
-            &immutables.taker,
-            &immutables.safety_deposit
-        );
-
-        // Emit cancellation event
-        env.events().publish(
-            ("escrow_cancelled",),
-            ()
-        );
-    }
-
-    
-    fn only_taker(_env: &Env, immutables: &Immutables) {
+  
+    pub(crate) fn only_taker(_env: &Env, immutables: &Immutables) {
         immutables.taker.require_auth();
     }
     
-    fn only_after(env: &Env, timelock: U256) {
+    pub(crate) fn only_after(env: &Env, timelock: U256) {
     // Convert timestamp to U256 for comparison
     let current_timestamp = env.ledger().timestamp();
     let current_time = U256::from_u128(env, current_timestamp.into());
@@ -151,7 +92,7 @@ impl EscrowContract {
     }
 }
 
-    fn only_before(env: &Env, timelock: U256) {
+    pub(crate) fn only_before(env: &Env, timelock: U256) {
         // Convert timestamp to U256 for comparison
         let current_timestamp = env.ledger().timestamp();
         let current_time = U256::from_u128(env, current_timestamp.into());
@@ -162,20 +103,14 @@ impl EscrowContract {
         }
     }
 
-    fn only_valid_secret(env: &Env, secret: &BytesN<32>, immutables: &Immutables) {
+    pub(crate) fn only_valid_secret(env: &Env, secret: &BytesN<32>, immutables: &Immutables) {
         let hash = env.crypto().keccak256(&secret.clone().into());
         if BytesN::from(hash) != immutables.hashlock {
             panic!("Invalid secret provided");
         }
     }
 
-    // Helper function to calculate keccak256 hash
-    fn keccak256(env: &Env, data: BytesN<32>) -> BytesN<32> {
-        let hash = env.crypto().keccak256(&data.into());
-        BytesN::from(hash)
-    }
-
-    fn uni_transfer(env: &Env, token: &Address, to: &Address, amount: &U256) {
+    pub(crate) fn uni_transfer(env: &Env, token: &Address, to: &Address, amount: &U256) {
         // Convert U256 to i128 for Soroban token transfer
         let amount_u128 = amount.to_u128().unwrap_or_else(|| panic!("Amount overflow"));
         let amount_i128 = amount_u128 as i128;
@@ -188,7 +123,7 @@ impl EscrowContract {
         );
     }
 
-    fn _withdraw(
+    pub(crate) fn _withdraw(
         env: &Env,
         secret: BytesN<32>,
         immutables: &Immutables,
