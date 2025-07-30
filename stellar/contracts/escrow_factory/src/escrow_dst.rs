@@ -9,7 +9,7 @@ pub struct EscrowDst;
 
 #[contractimpl]
 impl EscrowDst {
-    pub fn __constructor(env: Env, access_token: Address, rescue_delay: U256) {
+    pub fn intialize(env: Env, access_token: Address, rescue_delay: U256) {
         EscrowContract::constructor(env, access_token, rescue_delay);
     }
 

@@ -8,11 +8,11 @@ pub struct EscrowSrc;
 
 #[contractimpl]
 impl EscrowSrc {
-    pub fn __constructor(env: Env, access_token: Address, rescue_delay: U256) {
+    pub fn start(env: Env, access_token: Address, rescue_delay: U256) {
         EscrowContract::constructor(env, access_token, rescue_delay);
     }
 
-    pub fn withdraw(env: Env, secret: BytesN<32>, immutables: Immutables, target: Address) {
+    pub fn src_withdraw(env: Env, secret: BytesN<32>, immutables: Immutables, target: Address) {
         // Authorization check
         EscrowContract::only_taker(&env, &immutables);
 
@@ -58,7 +58,7 @@ impl EscrowSrc {
         Self::_withdraw_to(&env, secret, &target, &immutables);
     }
 
-    pub fn public_withdraw(env: Env, secret: BytesN<32>, immutables: Immutables) {
+    pub fn src_public_withdraw(env: Env, secret: BytesN<32>, immutables: Immutables) {
         // Time window checks
         let public_withdrawal_time = TimelocksLib::get(
             &env,
@@ -79,7 +79,7 @@ impl EscrowSrc {
         Self::_withdraw_to(&env, secret, &immutables.taker, &immutables);
     }
 
-    pub fn cancel(env: Env, immutables: Immutables) {
+    pub fn src_cancel(env: Env, immutables: Immutables) {
         // Authorization check
         EscrowContract::only_taker(&env, &immutables);
 

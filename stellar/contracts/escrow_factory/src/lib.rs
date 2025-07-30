@@ -10,8 +10,6 @@ use soroban_sdk::{
 };
 
 pub use escrow::{EscrowContract, Immutables};
-pub use escrow_dst::EscrowDst;
-pub use escrow_src::EscrowSrc;
 pub use timelocks::{Stage, Timelocks, TimelocksLib};
 
 #[contract]
