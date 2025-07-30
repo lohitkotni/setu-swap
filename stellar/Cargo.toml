@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-  "contracts/*",
+  "contracts/*", "escrow_common",
 ]
 
 [workspace.dependencies]

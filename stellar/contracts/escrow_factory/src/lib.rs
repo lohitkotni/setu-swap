@@ -1,115 +1,143 @@
 #![no_std]
-mod escrow_src;
-mod escrow_dst;
 mod escrow;
+mod escrow_dst;
+mod escrow_src;
 mod timelocks;
 
-use soroban_sdk::{contract, contractimpl, contracttype, Env, U256, BytesN, Address, token::TokenClient};
-pub use escrow_src::EscrowSrc;
+use soroban_sdk::{
+    Val,contract, contractimpl, symbol_short, token::TokenClient, Address, BytesN, Env,
+    IntoVal,Vec, U256, Symbol,
+};
+
+pub use escrow::{EscrowContract, Immutables};
 pub use escrow_dst::EscrowDst;
-pub use escrow::{Immutables, EscrowContract};
-pub use timelocks::{Timelocks, TimelocksLib, Stage};
+pub use escrow_src::EscrowSrc;
+pub use timelocks::{Stage, Timelocks, TimelocksLib};
 
 #[contract]
 pub struct EscrowFactory;
 
+const RESCUE_DELAY_SRC: Symbol = symbol_short!("res_src");
+const RESCUE_DELAY_DST: Symbol = symbol_short!("res_dst");
+
 #[contractimpl]
 impl EscrowFactory {
-    pub fn __constructor(
-        env: Env,
-        rescue_delay_src: U256,
-        rescue_delay_dst: U256,
-    ) {
-        env.storage().instance().set(&DataKey::RescueDelaySrc, &rescue_delay_src);
-        env.storage().instance().set(&DataKey::RescueDelayDst, &rescue_delay_dst);
+    pub fn __constructor(env: Env, rescue_delay_src: U256, rescue_delay_dst: U256) {
+        env.storage()
+            .instance()
+            .set(&RESCUE_DELAY_SRC, &rescue_delay_src);
+        env.storage()
+            .instance()
+            .set(&RESCUE_DELAY_DST, &rescue_delay_dst);
     }
 
     pub fn create_src_escrow(
         env: Env,
-        immutables: Immutables,
-    ) {
-        let mut updated_immutables = immutables.clone();
-        updated_immutables.timelocks = TimelocksLib::set_deployed_at(
-            &env,
-            updated_immutables.timelocks,
-            env.ledger().timestamp().into(),
-        );
+        wasm_hash: BytesN<32>,
+        salt: BytesN<32>,
+        mut immutables: Immutables,
+    ) -> Address {
+        let current_timestamp = env.ledger().timestamp();
+        let current_time = U256::from_u128(&env, current_timestamp.into());
 
-        let escrow_address = escrow_src::EscrowSrc::new(
-            &env,
-            updated_immutables.clone(),
-            env.storage().instance().get(&DataKey::RescueDelaySrc).unwrap(),
-        );
+        immutables.timelocks =
+            TimelocksLib::set_deployed_at(&env, immutables.timelocks, current_time);
 
-        // Transfer tokens (amount + safety deposit) to escrow
+        let rescue_delay = env
+            .storage()
+            .instance()
+            .get::<_, U256>(&RESCUE_DELAY_SRC)
+            .unwrap();
+
+            let mut constructor_args: Vec<Val> = Vec::new(&env);
+            constructor_args.push_back(immutables.clone().into_val(&env));
+            constructor_args.push_back(rescue_delay.into_val(&env));
+
+        let escrow_address = env
+            .deployer()
+            .with_address(env.current_contract_address(), salt)
+            .deploy_v2(wasm_hash, constructor_args);
+
+        // Transfer tokens (amount + safety deposit)
         let total_amount = immutables.amount.add(&immutables.safety_deposit);
-        let amount_u128 = total_amount.to_u128().unwrap_or_else(|| panic!("Amount overflow"));
-        let amount_i128 = amount_u128 as i128;
         let token_client = TokenClient::new(&env, &immutables.token);
-        token_client.transfer(&env.invoker(), &escrow_address, &amount_i128);
+        token_client.transfer(
+            &immutables.maker,
+            &escrow_address,
+            &(total_amount.to_u128().unwrap() as i128),
+        );
 
         env.events().publish(
             (
                 "src_escrow_created",
-                escrow_address,
+                escrow_address.clone(),
                 immutables.hashlock,
                 immutables.maker,
                 immutables.taker,
             ),
             (),
         );
+
+        escrow_address
     }
 
     pub fn create_dst_escrow(
         env: Env,
-        dst_immutables: Immutables,
+        wasm_hash: BytesN<32>,
+        salt: BytesN<32>,
+        mut immutables: Immutables,
         src_cancellation_timestamp: U256,
-    ) {
-        let mut updated_immutables = dst_immutables.clone();
-        updated_immutables.timelocks = TimelocksLib::set_deployed_at(
-            &env,
-            updated_immutables.timelocks,
-            env.ledger().timestamp().into(),
-        );
+    ) -> Address {
+        let current_timestamp = env.ledger().timestamp();
+        let current_time = U256::from_u128(&env, current_timestamp.into());
+
+        immutables.timelocks =
+            TimelocksLib::set_deployed_at(&env, immutables.timelocks, current_time);
 
         let dst_cancellation = TimelocksLib::get(
             &env,
-            updated_immutables.timelocks.clone(),
+            immutables.timelocks.clone(),
             Stage::DstCancellation as u32,
         );
-        
-        // Validate creation timing
+
         if dst_cancellation > src_cancellation_timestamp {
             panic!("Invalid creation time");
         }
 
-        let escrow_address = escrow_dst::EscrowDst::new(
-            &env,
-            updated_immutables.clone(),
-            env.storage().instance().get(&DataKey::RescueDelayDst).unwrap(),
-        );
+        let rescue_delay = env
+            .storage()
+            .instance()
+            .get::<_, U256>(&RESCUE_DELAY_DST)
+            .unwrap();
 
-        // Transfer tokens (amount + safety deposit) to escrow
-        let total_amount = dst_immutables.amount.add(&dst_immutables.safety_deposit);
-        let amount_u128 = total_amount.to_u128().unwrap_or_else(|| panic!("Amount overflow"));
-        let amount_i128 = amount_u128 as i128;
-        let token_client = TokenClient::new(&env, &dst_immutables.token);
-        token_client.transfer(&env.invoker(), &escrow_address, &amount_i128);
+            let mut constructor_args: Vec<Val> = Vec::new(&env);
+            constructor_args.push_back(immutables.clone().into_val(&env));
+            constructor_args.push_back(rescue_delay.into_val(&env));
+
+        let escrow_address = env
+            .deployer()
+            .with_address(env.current_contract_address(), salt)
+            .deploy_v2(wasm_hash, constructor_args);
+
+        // Transfer tokens (amount + safety deposit)
+        let total_amount = immutables.amount.add(&immutables.safety_deposit);
+        let token_client = TokenClient::new(&env, &immutables.token);
+        token_client.transfer(
+            &immutables.taker,
+            &escrow_address,
+            &(total_amount.to_u128().unwrap() as i128),
+        );
 
         env.events().publish(
             (
                 "dst_escrow_created",
-                escrow_address,
-                dst_immutables.hashlock,
-                dst_immutables.taker,
+                escrow_address.clone(),
+                immutables.hashlock,
+                immutables.taker,
             ),
             (),
         );
-    }
-}
 
-#[contracttype]
-pub enum DataKey {
-    RescueDelaySrc,
-    RescueDelayDst,
+        escrow_address
+    }
 }
