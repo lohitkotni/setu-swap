@@ -104,6 +104,21 @@ impl EscrowContract {
             panic!("Too late");
         }
     }
+    
+    pub(crate) fn only_access_token_holder(env: &Env, caller: &Address) {
+        let access_token: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::AccessToken)
+            .expect("access token not initialized");
+    
+        let client = TokenClient::new(env, &access_token);
+        let balance = client.balance(caller);
+    
+        if balance == 0 {
+            panic!("Invalid caller: no access tokens");
+        }
+    }
 
     pub(crate) fn only_valid_secret(env: &Env, secret: &BytesN<32>, immutables: &Immutables) {
         let hash = env.crypto().keccak256(&secret.clone().into());
@@ -123,8 +138,9 @@ impl EscrowContract {
         token_client.transfer(&env.current_contract_address(), to, &amount_i128);
     }
 
-    pub(crate) fn _withdraw(env: &Env, secret: BytesN<32>, immutables: &Immutables) {
+    pub(crate) fn _withdraw(env: &Env, secret: BytesN<32>, immutables: &Immutables, caller: Address) {
         // Validate secret
+        caller.require_auth();
         Self::only_valid_secret(env, &secret, immutables);
 
         // Transfer tokens to maker
@@ -139,7 +155,7 @@ impl EscrowContract {
         Self::uni_transfer(
             env,
             &immutables.token, // Using same token for safety deposit in Soroban
-            &immutables.taker,
+            &caller,
             &immutables.safety_deposit,
         );
 

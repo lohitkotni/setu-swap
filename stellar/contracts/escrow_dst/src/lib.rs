@@ -16,7 +16,8 @@ impl EscrowDst {
         EscrowContract::constructor(env, access_token, rescue_delay);
     }
 
-    pub fn withdraw(env: Env, secret: BytesN<32>, immutables: Immutables) {
+    pub fn withdraw(env: Env, secret: BytesN<32>, immutables: Immutables, msg_sender: Address) {
+        msg_sender.require_auth();
         // Authorization check
         EscrowContract::only_taker(&env, &immutables);
 
@@ -36,12 +37,13 @@ impl EscrowDst {
         EscrowContract::only_before(&env, cancellation_time);
 
         // Perform withdrawal
-        EscrowContract::_withdraw(&env, secret, &immutables);
+        EscrowContract::_withdraw(&env, secret, &immutables,msg_sender);
     }
 
-    pub fn cancel(env: Env, immutables: Immutables) {
+    pub fn cancel(env: Env, immutables: Immutables,msg_sender: Address) {
         // Authorization check
         EscrowContract::only_taker(&env, &immutables);
+        msg_sender.require_auth();
 
         // Time window check for cancellation
         let cancellation_time = TimelocksLib::get(
@@ -63,7 +65,7 @@ impl EscrowDst {
         EscrowContract::uni_transfer(
             &env,
             &immutables.token,
-            &immutables.taker,
+            &msg_sender,
             &immutables.safety_deposit,
         );
 
@@ -71,10 +73,9 @@ impl EscrowDst {
         env.events().publish(("escrow_cancelled",), ());
     }
 
-    pub fn public_withdraw(env: Env, secret: BytesN<32>, immutables: Immutables) {
+    pub fn public_withdraw(env: Env, secret: BytesN<32>, immutables: Immutables, msg_sender: Address) {
         // Check if caller is access token holder
-        let access_token = EscrowContract::get_access_token(env.clone());
-        access_token.require_auth();
+        EscrowContract::only_access_token_holder(&env, &msg_sender);
 
         // Time window checks
         let public_withdrawal_time = TimelocksLib::get(
@@ -93,6 +94,6 @@ impl EscrowDst {
         EscrowContract::only_before(&env, cancellation_time);
 
         // Perform withdrawal
-        EscrowContract::_withdraw(&env, secret, &immutables);
+        EscrowContract::_withdraw(&env, secret, &immutables, msg_sender);
     }
 }
