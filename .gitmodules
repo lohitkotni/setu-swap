@@ -10,3 +10,9 @@
 [submodule "ethereum/lib/forge-std"]
 	path = ethereum/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "ethereum/lib/limit-order-protocol"]
+	path = ethereum/lib/limit-order-protocol
+	url = https://github.com/1inch/limit-order-protocol
+[submodule "ethereum/lib/fusion-protocol"]
+	path = ethereum/lib/fusion-protocol
+	url = https://github.com/1inch/fusion-protocol

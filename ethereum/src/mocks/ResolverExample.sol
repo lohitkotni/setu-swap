@@ -11,11 +11,11 @@
 
 pragma solidity 0.8.23;
 
-import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import { Ownable } from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
 
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
-import { TakerTraits } from "limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
-import { RevertReasonForwarder } from "solidity-utils/contracts/libraries/RevertReasonForwarder.sol";
+import { IOrderMixin } from "lib/limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { TakerTraits } from "lib/limit-order-protocol/contracts/libraries/TakerTraitsLib.sol";
+import { RevertReasonForwarder } from "lib/solidity-utils/contracts/libraries/RevertReasonForwarder.sol";
 
 import { IBaseEscrow } from "../interfaces/IBaseEscrow.sol";
 import { IEscrowFactory } from "../interfaces/IEscrowFactory.sol";

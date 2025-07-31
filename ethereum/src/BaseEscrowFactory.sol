@@ -2,15 +2,15 @@
 
 pragma solidity 0.8.23;
 
-import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
-import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "openzeppelin-contracts/contracts/utils/Create2.sol";
-import { Address, AddressLib } from "solidity-utils/contracts/libraries/AddressLib.sol";
-import { SafeERC20 } from "solidity-utils/contracts/libraries/SafeERC20.sol";
+import { Clones } from "lib/openzeppelin-contracts/contracts/proxy/Clones.sol";
+import { IERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import { Create2 } from "lib/openzeppelin-contracts/contracts/utils/Create2.sol";
+import { Address, AddressLib } from "lib/solidity-utils/contracts/libraries/AddressLib.sol";
+import { SafeERC20 } from "lib/solidity-utils/contracts/libraries/SafeERC20.sol";
 
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
-import { MakerTraitsLib } from "limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
-import { ResolverValidationExtension } from "limit-order-settlement/contracts/extensions/ResolverValidationExtension.sol";
+import { IOrderMixin } from "lib/limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { MakerTraitsLib } from "lib/limit-order-protocol/contracts/libraries/MakerTraitsLib.sol";
+import { ResolverValidationExtension } from "./ResolverValidationExtension.sol";
 
 import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";

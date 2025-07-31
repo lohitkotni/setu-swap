@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.23;
 
-import { IOrderMixin } from "limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
-import { ExtensionLib } from "limit-order-protocol/contracts/libraries/ExtensionLib.sol";
-import { ITakerInteraction } from "limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
-import { MerkleProof } from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
+import { IOrderMixin } from "lib/limit-order-protocol/contracts/interfaces/IOrderMixin.sol";
+import { ExtensionLib } from "lib/limit-order-protocol/contracts/libraries/ExtensionLib.sol";
+import { ITakerInteraction } from "lib/limit-order-protocol/contracts/interfaces/ITakerInteraction.sol";
+import { MerkleProof } from "lib/openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 import { IEscrowFactory } from "./interfaces/IEscrowFactory.sol";
 import { IMerkleStorageInvalidator } from "./interfaces/IMerkleStorageInvalidator.sol";
