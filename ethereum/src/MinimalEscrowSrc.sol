@@ -1,38 +1,41 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.30;
-
+pragma solidity ^0.8.20;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import { SafeERC20 } from "@1inch/libraries/SafeERC20.sol";
 import { AddressLib, Address } from "@1inch/libraries/AddressLib.sol";
 
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
-import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
-
-import { MinimalBaseEscrow } from "./MinimalBaseEscrow.sol";
+import { ImmutablesLib, Immutables } from "./libraries/ImmutablesLib.sol";
 import { MinimalEscrow } from "./MinimalEscrow.sol";
 
+
+
 /**
- * @title Minimal Source Escrow contract for cross-chain atomic swap.
- * @notice Simple HTLC contract to lock funds and unlock them with verification of the secret.
+ * @title Source Escrow contract for cross-chain atomic swap.
+ * @notice Contract to initially lock funds and then unlock them with verification of the secret presented.
+ * @dev Funds are locked in at the time of contract deployment. For this Limit Order Protocol
+ * calls the `EscrowFactory.postInteraction` function.
+ * To perform any action, the caller must provide the same Immutables values used to deploy the clone contract.
+ * @custom:security-contact security@1inch.io
  */
-contract MinimalEscrowSrc is MinimalEscrow {
+contract MinimalEscrowSrc is MinimalEscrow{
     using AddressLib for Address;
     using ImmutablesLib for Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    constructor(uint32 rescueDelay) MinimalBaseEscrow(rescueDelay) {}
+    constructor(uint32 rescueDelay, IERC20 accessToken) MinimalEscrow(rescueDelay, accessToken) {}
 
-    
-    function PROXY_BYTECODE_HASH() external pure returns (bytes32) {
-        return bytes32(0);
-    }
+    event EscrowWithdrawal(bytes32 secret);
+    event EscrowCancelled();
 
     /**
-     * @notice Withdraw funds to taker with the correct secret.
-     * @param secret The secret that unlocks the escrow.
-     * @param immutables The immutable values used to deploy the clone contract.
+     * @notice See {IBaseEscrow-withdraw}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/--
+     * --/-- private cancellation --/-- public cancellation ----
      */
     function withdraw(bytes32 secret, Immutables calldata immutables)
         external
@@ -44,10 +47,10 @@ contract MinimalEscrowSrc is MinimalEscrow {
     }
 
     /**
-     * @notice Withdraw funds to a specified target.
-     * @param secret The secret that unlocks the escrow.
-     * @param target The address to transfer ERC20 tokens to.
-     * @param immutables The immutable values used to deploy the clone contract.
+     * @notice See {IEscrowSrc-withdrawTo}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- PRIVATE WITHDRAWAL --/-- PUBLIC WITHDRAWAL --/--
+     * --/-- private cancellation --/-- public cancellation ----
      */
     function withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         external
@@ -59,8 +62,25 @@ contract MinimalEscrowSrc is MinimalEscrow {
     }
 
     /**
-     * @notice Cancel the escrow and return funds to maker after timelock expires.
-     * @param immutables The immutable values used to deploy the clone contract.
+     * @notice See {IEscrowSrc-publicWithdraw}.
+     * @dev The function works on the time interval highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- PUBLIC WITHDRAWAL --/--
+     * --/-- private cancellation --/-- public cancellation ----
+     */
+    function publicWithdraw(bytes32 secret, Immutables calldata immutables)
+        external
+        onlyAccessTokenHolder()
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicWithdrawal))
+        onlyBefore(immutables.timelocks.get(TimelocksLib.Stage.SrcCancellation))
+    {
+        _withdrawTo(secret, immutables.taker.get(), immutables);
+    }
+
+    /**
+     * @notice See {IBaseEscrow-cancel}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/--
+     * --/-- PRIVATE CANCELLATION --/-- PUBLIC CANCELLATION ----
      */
     function cancel(Immutables calldata immutables)
         external
@@ -71,11 +91,27 @@ contract MinimalEscrowSrc is MinimalEscrow {
     }
 
     /**
+     * @notice See {IEscrowSrc-publicCancel}.
+     * @dev The function works on the time intervals highlighted with capital letters:
+     * ---- contract deployed --/-- finality --/-- private withdrawal --/-- public withdrawal --/--
+     * --/-- private cancellation --/-- PUBLIC CANCELLATION ----
+     */
+    function publicCancel(Immutables calldata immutables)
+        external
+        onlyAccessTokenHolder()
+        onlyAfter(immutables.timelocks.get(TimelocksLib.Stage.SrcPublicCancellation))
+    {
+        _cancel(immutables);
+    }
+
+    /**
      * @dev Transfers ERC20 tokens to the target and native tokens to the caller.
+     * @param secret The secret that unlocks the escrow.
+     * @param target The address to transfer ERC20 tokens to.
+     * @param immutables The immutable values used to deploy the clone contract.
      */
     function _withdrawTo(bytes32 secret, address target, Immutables calldata immutables)
         internal
-        onlyValidImmutables(immutables)
         onlyValidSecret(secret, immutables)
     {
         IERC20(immutables.token.get()).safeTransfer(target, immutables.amount);
@@ -85,10 +121,11 @@ contract MinimalEscrowSrc is MinimalEscrow {
 
     /**
      * @dev Transfers ERC20 tokens to the maker and native tokens to the caller.
+     * @param immutables The immutable values used to deploy the clone contract.
      */
-    function _cancel(Immutables calldata immutables) internal onlyValidImmutables(immutables) {
+    function _cancel(Immutables calldata immutables) internal {
         IERC20(immutables.token.get()).safeTransfer(immutables.maker.get(), immutables.amount);
         _ethTransfer(msg.sender, immutables.safetyDeposit);
         emit EscrowCancelled();
     }
-} 
+}

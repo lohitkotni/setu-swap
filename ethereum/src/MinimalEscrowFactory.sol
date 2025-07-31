@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.30;
+pragma solidity ^0.8.20;
 
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Create2 } from "@openzeppelin/contracts/utils/Create2.sol";
 import { Address, AddressLib } from "@1inch/libraries/AddressLib.sol";
 import { SafeERC20 } from "@1inch/libraries/SafeERC20.sol";
 
-import { ImmutablesLib } from "./libraries/ImmutablesLib.sol";
+import { ImmutablesLib, Immutables } from "./libraries/ImmutablesLib.sol";
 import { Timelocks, TimelocksLib } from "./libraries/TimelocksLib.sol";
-
-import { IBaseEscrow } from "./interfaces/IBaseEscrow.sol";
 import { MinimalEscrowSrc } from "./MinimalEscrowSrc.sol";
 import { MinimalEscrowDst } from "./MinimalEscrowDst.sol";
 
@@ -21,15 +17,12 @@ import { MinimalEscrowDst } from "./MinimalEscrowDst.sol";
  */
 contract MinimalEscrowFactory {
     using AddressLib for Address;
-    using Clones for address;
-    using ImmutablesLib for IBaseEscrow.Immutables;
+    using ImmutablesLib for Immutables;
     using SafeERC20 for IERC20;
     using TimelocksLib for Timelocks;
 
-    /// @notice Implementation contract for source chain escrows.
-    address public immutable ESCROW_SRC_IMPLEMENTATION;
-    /// @notice Implementation contract for destination chain escrows.
-    address public immutable ESCROW_DST_IMPLEMENTATION;
+    uint32 public immutable rescueDelaySrc;
+    uint32 public immutable rescueDelayDst;
 
     error InsufficientEscrowBalance();
     error InvalidCreationTime();
@@ -51,16 +44,16 @@ contract MinimalEscrowFactory {
      */
     event DstEscrowCreated(address escrow, bytes32 hashlock, Address taker);
 
-    constructor(uint32 rescueDelaySrc, uint32 rescueDelayDst) {
-        ESCROW_SRC_IMPLEMENTATION = address(new MinimalEscrowSrc(rescueDelaySrc));
-        ESCROW_DST_IMPLEMENTATION = address(new MinimalEscrowDst(rescueDelayDst));
+    constructor(uint32 rescueDelaySrc_, uint32 rescueDelayDst_) {
+        rescueDelaySrc = rescueDelaySrc_;
+        rescueDelayDst = rescueDelayDst_;
     }
 
     /**
      * @notice Creates a new escrow contract for the source chain.
      * @param immutables The immutables of the escrow contract.
      */
-    function createSrcEscrow(IBaseEscrow.Immutables calldata immutables) external payable {
+    function createSrcEscrow(Immutables calldata immutables) external payable {
         address token = immutables.token.get();
         uint256 nativeAmount = immutables.safetyDeposit;
         if (token == address(0)) {
@@ -68,17 +61,16 @@ contract MinimalEscrowFactory {
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        IBaseEscrow.Immutables memory srcImmutables = immutables;
+        Immutables memory srcImmutables = immutables;
         srcImmutables.timelocks = srcImmutables.timelocks.setDeployedAt(block.timestamp);
 
-        bytes32 salt = srcImmutables.hashMem();
-        address escrow = _deployEscrow(salt, msg.value, ESCROW_SRC_IMPLEMENTATION);
+        MinimalEscrowSrc escrow = new MinimalEscrowSrc(uint32(rescueDelaySrc), IERC20(token));
         
         if (token != address(0)) {
-            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
+            IERC20(token).safeTransferFrom(msg.sender, address(escrow), immutables.amount);
         }
 
-        emit SrcEscrowCreated(escrow, immutables.hashlock, immutables.maker.get(), immutables.taker.get());
+        emit SrcEscrowCreated(address(escrow), immutables.hashlock, immutables.maker.get(), immutables.taker.get());
     }
 
     /**
@@ -86,7 +78,7 @@ contract MinimalEscrowFactory {
      * @param dstImmutables The immutables of the escrow contract.
      * @param srcCancellationTimestamp The start of the cancellation period for the source chain.
      */
-    function createDstEscrow(IBaseEscrow.Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
+    function createDstEscrow(Immutables calldata dstImmutables, uint256 srcCancellationTimestamp) external payable {
         address token = dstImmutables.token.get();
         uint256 nativeAmount = dstImmutables.safetyDeposit;
         if (token == address(0)) {
@@ -94,48 +86,18 @@ contract MinimalEscrowFactory {
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        IBaseEscrow.Immutables memory immutables = dstImmutables;
+        Immutables memory immutables = dstImmutables;
         immutables.timelocks = immutables.timelocks.setDeployedAt(block.timestamp);
         
         // Check that the escrow cancellation will start not later than the cancellation time on the source chain.
         if (immutables.timelocks.get(TimelocksLib.Stage.DstCancellation) > srcCancellationTimestamp) revert InvalidCreationTime();
 
-        bytes32 salt = immutables.hashMem();
-        address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
+        MinimalEscrowDst escrow = new MinimalEscrowDst(uint32(rescueDelayDst), IERC20(token));
         
         if (token != address(0)) {
-            IERC20(token).safeTransferFrom(msg.sender, escrow, immutables.amount);
+            IERC20(token).safeTransferFrom(msg.sender, address(escrow), immutables.amount);
         }
 
-        emit DstEscrowCreated(escrow, dstImmutables.hashlock, dstImmutables.taker);
-    }
-
-    /**
-     * @notice Returns the deterministic address of the source escrow.
-     * @param immutables The immutable arguments used to compute salt for escrow deployment.
-     * @return The computed address of the escrow.
-     */
-    function addressOfEscrowSrc(IBaseEscrow.Immutables calldata immutables) external view returns (address) {
-        return Clones.predictDeterministicAddress(ESCROW_SRC_IMPLEMENTATION, immutables.hash(), address(this));
-    }
-
-    /**
-     * @notice Returns the deterministic address of the destination escrow.
-     * @param immutables The immutable arguments used to compute salt for escrow deployment.
-     * @return The computed address of the escrow.
-     */
-    function addressOfEscrowDst(IBaseEscrow.Immutables calldata immutables) external view returns (address) {
-        return Clones.predictDeterministicAddress(ESCROW_DST_IMPLEMENTATION, immutables.hash(), address(this));
-    }
-
-    /**
-     * @notice Deploys a new escrow contract.
-     * @param salt The salt for the deterministic address computation.
-     * @param value The value to be sent to the escrow contract.
-     * @param implementation Address of the implementation.
-     * @return escrow The address of the deployed escrow contract.
-     */
-    function _deployEscrow(bytes32 salt, uint256 value, address implementation) internal returns (address escrow) {
-        escrow = implementation.cloneDeterministic(salt, value);
+        emit DstEscrowCreated(address(escrow), dstImmutables.hashlock, dstImmutables.taker);
     }
 } 
