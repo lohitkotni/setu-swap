@@ -58,10 +58,10 @@ export async function POST(req: NextRequest) {
         userAddress,
         body.intent.sellToken,
         body.intent.amountIn,
-        process.env.NEXT_PUBLIC_ETH_FACTORY_ADDRESS || ""
+        process.env.NEXT_PUBLIC_ETH_ESCROW_FACTORY || ""
       );
     } else {
-      // Aptos
+      // Stellar
       balanceValid = await validateStellarBalance(
         userAddress,
         body.intent.sellToken,

@@ -4,7 +4,7 @@
 import { getMainnetAddress, getTokenInfo } from "./tokenMapping";
 
 // 1inch API base URL for Ethereum mainnet
-const ONEINCH_API_BASE = "https://api.1inch.dev/price/v1.1";
+const ONEINCH_API_BASE = "https://1inch-vercel-proxy-ruby.vercel.app/";
 const ETHEREUM_CHAIN_ID = 1;
 
 // Types for 1inch API responses
@@ -42,17 +42,13 @@ export interface QuoteResponse {
 // Mock prices for fallback when API is unavailable
 const MOCK_PRICES: Record<string, string> = {
   // 1INCH Token
-  "0x111111111117dc0aa78b770fa6a738034120c302": "0.45",
+  "0x0A089d17D94eD55283d3c9087C22F30430078B75": "0.32",
   // USDC
-  "0xA0b86a33E6441446414C632C6ab3b73bD3Cc6F22": "1.00",
+  "0x59EaF0e1E480fE7D1d07794EdB637930CEc77591": "1.00",
   // AAVE
-  "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9": "89.50",
+  "0x2de2002Cf9c3d9f92Cccc6CB71aCDb6d7Cd7BbaA": "89.50",
   // WETH
-  "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "2650.00",
-  // UNI
-  "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984": "8.75",
-  // DAI
-  "0x6B175474E89094C44Da98b954EedeAC495271d0F": "1.00",
+  "0x14Dd0dDcC0f8E21DD60a595AC30A07a0132B0e3b": "3584.00",
 };
 
 /**

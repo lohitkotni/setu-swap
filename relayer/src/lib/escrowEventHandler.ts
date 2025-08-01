@@ -217,7 +217,7 @@ export async function processDstEscrowCreatedEvent(
 ): Promise<EscrowEvent> {
   try {
     const provider = new ethers.JsonRpcProvider(
-      process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545"
+      process.env.RPC_URL || "http://127.0.0.1:8545"
     );
     const db = await getDatabase();
 
@@ -409,12 +409,12 @@ export async function saveEvent(event: EscrowEvent): Promise<void> {
 
 export function getConfigFromEnv(): ListenerConfig {
   return {
-    rpcUrl: process.env.SEPOLIA_RPC_URL || "http://127.0.0.1:8545", // Default to hardhat
+    rpcUrl: process.env.RPC_URL || "http://127.0.0.1:8545",
     factoryAddress:
-      process.env.ESCROW_FACTORY ||
-      "0x60184F8E39415bB9EFb3b37705C0F68E1FA1363A", // Hardhat deployed address
-    chainId: parseInt(process.env.SEPOLIA_CHAIN_ID || "31337"), // Hardhat chain ID
-    startBlock: parseInt(process.env.START_BLOCK || "0"),
+      process.env.NEXT_PUBLIC_ETH_ESCROW_FACTORY ||
+      "0x60184F8E39415bB9EFb3b37705C0F68E1FA1363A", //
+    chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "31337"),
+    startBlock: parseInt(process.env.NEXT_PUBLIC_START_BLOCK || "0"),
   };
 }
 

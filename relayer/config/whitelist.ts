@@ -10,13 +10,14 @@ export function getWhitelistConfig(): WhitelistConfig {
   return {
     tokens: {
       ethereum: [
-        process.env.STABLE_TOKEN || "",
-        process.env.MEME_TOKEN || "",
-        process.env.ACCESS_TOKEN || "",
+        process.env.NEXT_PUBLIC_1INCH_ADDRESS || "",
+        process.env.NEXT_PUBLIC_USDC_ADDRESS || "",
+        process.env.NEXT_PUBLIC_AAVE_ADDRESS || "",
+        process.env.NEXT_PUBLIC_WETH_ADDRESS || "",
       ].filter(Boolean),
       stellar: [
-        process.env.STELLAR_ADDRESS || "",
-        process.env.STELLAR_USDC_ADDRESS || "",
+        process.env.NEXT_PUBLIC_STELLAR_ADDRESS || "",
+        process.env.NEXT_PUBLIC_STELLAR_USDC_ADDRESS || "",
       ],
     },
     resolvers: [

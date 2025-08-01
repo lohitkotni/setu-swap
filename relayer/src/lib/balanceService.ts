@@ -40,7 +40,7 @@ export async function getEthBalance(
 export async function getTokenBalance(
   userAddress: string,
   tokenAddress: string,
-  rpcUrl: string = "http://127.0.0.1:8545"
+  rpcUrl: string = process.env.NEXT_PUBLIC_ETH_RPC_URL || ""
 ): Promise<TokenBalance | null> {
   try {
     const provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -85,7 +85,7 @@ export async function getTokenBalance(
 export async function getMultipleTokenBalances(
   userAddress: string,
   tokenAddresses: string[],
-  rpcUrl: string = "http://127.0.0.1:8545"
+  rpcUrl: string = process.env.NEXT_PUBLIC_ETH_RPC_URL || ""
 ): Promise<Record<string, TokenBalance>> {
   const balances: Record<string, TokenBalance> = {};
 
