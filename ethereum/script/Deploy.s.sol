@@ -22,7 +22,7 @@ contract Deploy is Script {
         console.log("meme token deployed to:", address(0xf0E43392020D5B8db4E691aD16642Ee777f818B9));
 
         address limitOrderProtocol = address(0x0000000000000000000000000000000000000000);
-        IERC20 feeToken = IERC20(address(0xc7657D8c30c9C3792C9697c9A2F772F41cCe19c5));
+        IERC20 feeToken = IERC20(address(0x0A089d17D94eD55283d3c9087C22F30430078B75));
         IERC20 accessToken = IERC20(address(0xf0E43392020D5B8db4E691aD16642Ee777f818B9));
         address owner = deployer;
         uint32 rescueDelaySrc = 24 * 60 * 60;
