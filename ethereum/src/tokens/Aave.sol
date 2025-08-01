@@ -4,9 +4,9 @@ pragma solidity 0.8.23;
 
 import { ERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
-contract StableToken is ERC20 {
+contract AAVE is ERC20 {
     uint256 public constant TOTAL_SUPPLY = 1000000000000000000000000000;
-    constructor() ERC20("StableToken", "STB") {
+    constructor() ERC20("AAVE", "AAVE") {
         _mint(msg.sender, TOTAL_SUPPLY);
     }
 }
