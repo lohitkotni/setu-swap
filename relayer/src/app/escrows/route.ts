@@ -6,6 +6,7 @@ export async function GET() {
     const db = await getDatabase();
     const escrows = await db.getAllEscrows();
     return NextResponse.json({
+      success: true,
       data: escrows,
       count: escrows.length,
     });
