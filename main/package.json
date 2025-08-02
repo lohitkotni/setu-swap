@@ -1,0 +1,19 @@
+{
+  "name": "main",
+  "version": "1.0.0",
+  "description": "A fusion+ application built for stellar and ethereum",
+  "homepage": "https://github.com/lohitkotni/setu-swap#readme",
+  "bugs": {
+    "url": "https://github.com/lohitkotni/setu-swap/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lohitkotni/setu-swap.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
