@@ -17,11 +17,9 @@ function isEVMAddress(address: string): boolean {
 }
 
 function isNonEVMAddress(address: string): boolean {
-  // Stellar addresses contain "::"
+  // Stellar addresses contain "A-Z0-9"
   // Add other patterns as needed for different chains
-  return (
-    address.includes("::") || (!isEVMAddress(address) && address.length > 0)
-  );
+  return !isEVMAddress(address) && address.length > 0;
 }
 
 interface TokenInfo {

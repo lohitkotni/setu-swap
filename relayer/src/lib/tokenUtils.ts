@@ -368,9 +368,7 @@ export function isEVMAddress(address: string): boolean {
 export function isNonEVMAddress(address: string): boolean {
   // Stellar addresses contain "A-Z" and there will be 56 characters
   // Add other patterns as needed for different chains
-  if (!address || address.length !== 56) return false;
-  if (!/^[A-Z2-7]+$/.test(address)) return false;
-  return true;
+  return !isEVMAddress(address) && address.length > 0;
 }
 
 /**

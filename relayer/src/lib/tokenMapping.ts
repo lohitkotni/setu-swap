@@ -37,7 +37,7 @@ export const TOKEN_MAPPINGS: TokenMapping[] = [
   },
   // Stellar Lumens(XLM)
   {
-    localAddress: process.env.STELLAR_ADDRESS || "",
+    localAddress: process.env.NEXT_PUBLIC_STELLAR_ADDRESS || "",
     mainnetAddress:
       "000000000000000000000000000000000000000000000000000000000000",
     symbol: "XLM",
@@ -47,8 +47,8 @@ export const TOKEN_MAPPINGS: TokenMapping[] = [
   // USDC on Stellar
   {
     localAddress:
-      process.env.STELLAR_USDC_ADDRESS ||
-      "GBF2342JDAISOFJ34OIEHRFGJOI34HFGJ45JRF78FGJOI34OIERHGLKJA45J",
+      process.env.NEXT_PUBLIC_STELLAR_USDC_ADDRESS ||
+      "CAI267TPLO3BX2TX5OYAGT6OYCHDKY3JHLYLPASI6FIFSVFIJTZKN2NC",
     mainnetAddress:
       "GBF2342JDAISOFJ34OIEHRFGJOI34HFGJ45JRF78FGJOI34OIERHGLKJA45J",
     symbol: "USDC",
