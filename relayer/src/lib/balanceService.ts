@@ -24,6 +24,9 @@ export async function getEthBalance(
   userAddress: string,
   rpcUrl: string = "http://127.0.0.1:8545"
 ): Promise<string> {
+  if (!rpcUrl || !rpcUrl.startsWith("http")) {
+    throw new Error(`Invalid or missing RPC URL: "${rpcUrl}"`);
+  }
   try {
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const balance = await provider.getBalance(userAddress);
@@ -40,7 +43,7 @@ export async function getEthBalance(
 export async function getTokenBalance(
   userAddress: string,
   tokenAddress: string,
-  rpcUrl: string = process.env.NEXT_PUBLIC_ETH_RPC_URL || ""
+  rpcUrl: string = "http://127.0.0.1:8545"
 ): Promise<TokenBalance | null> {
   try {
     const provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -85,8 +88,11 @@ export async function getTokenBalance(
 export async function getMultipleTokenBalances(
   userAddress: string,
   tokenAddresses: string[],
-  rpcUrl: string = process.env.NEXT_PUBLIC_ETH_RPC_URL || ""
+  rpcUrl: string = "http://127.0.0.1:8545"
 ): Promise<Record<string, TokenBalance>> {
+  if (!rpcUrl || !rpcUrl.startsWith("http")) {
+    throw new Error(`Invalid or missing RPC URL: "${rpcUrl}"`);
+  }
   const balances: Record<string, TokenBalance> = {};
 
   const balancePromises = tokenAddresses.map(async (tokenAddress) => {

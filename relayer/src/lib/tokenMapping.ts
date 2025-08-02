@@ -7,22 +7,20 @@ export interface TokenMapping {
 }
 
 export const TOKEN_MAPPINGS: TokenMapping[] = [
-  // MEME Token
   {
     localAddress:
       process.env.NEXT_PUBLIC_1INCH_ADDRESS ||
-      "0x5fbdb2315678afecb367f032d93f642f64180aa3",
-    mainnetAddress: "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
+      " 0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    mainnetAddress: "0x111111111117dC0aa78b770fA6A738034120C302",
     symbol: "1INCH",
     name: "1INCH",
     decimals: 18,
   },
-  // WETH Token
   {
     localAddress:
       process.env.NEXT_PUBLIC_USDC_ADDRESS ||
-      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
-    mainnetAddress: "0x59EaF0e1E480fE7D1d07794EdB637930CEc77591", //
+      "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    mainnetAddress: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", //
     symbol: "USDC",
     name: "USDC",
     decimals: 18,
@@ -31,7 +29,7 @@ export const TOKEN_MAPPINGS: TokenMapping[] = [
   {
     localAddress:
       process.env.NEXT_PUBLIC_AAVE_ADDRESS ||
-      "0x2de2002Cf9c3d9f92Cccc6CB71aCDb6d7Cd7BbaA",
+      "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
     mainnetAddress: "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9",
     symbol: "AAVE",
     name: "Aave Token",

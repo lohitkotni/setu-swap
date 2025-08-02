@@ -76,7 +76,7 @@ export async function getTokenInfo(tokenAddress: string): Promise<TokenInfo> {
     }
 
     const provider = new ethers.JsonRpcProvider(
-      process.env.RPC_URL || "http://127.0.0.1:8545"
+      process.env.NEXT_PUBLIC_RPC_URL ?? ""
     );
     const tokenContract = new ethers.Contract(
       tokenAddress,
@@ -185,7 +185,7 @@ export async function checkTokenAllowance(
     const tokenInfo = await getTokenInfo(tokenAddress);
 
     const provider = new ethers.JsonRpcProvider(
-      process.env.RPC_URL || "http://127.0.0.1:8545"
+      process.env.NEXT_PUBLIC_RPC_URL ?? ""
     );
     const tokenContract = new ethers.Contract(
       tokenAddress,
