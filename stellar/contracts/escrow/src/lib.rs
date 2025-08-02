@@ -110,7 +110,7 @@ impl EscrowContract {
         amount: i128,
         safety_deposit: i128,
         hashlock: BytesN<32>,
-        timelocks: Vec<u64>,
+        rescue_delay: u32,
         is_src: bool,
         merkle_root: BytesN<32>,
         parts: u32,
@@ -122,11 +122,19 @@ impl EscrowContract {
         if safety_deposit <= 0 {
             panic!("Invalid safety deposit");
         }
-        if timelocks.len() != 5 {
-            panic!("Invalid timelocks");
-        }
+
+        // Validate init_time
+        let init_time = env.ledger().timestamp();
 
         maker.require_auth();
+
+        // Compute timelocks using get_timelock_deadline
+        let mut timelocks = Vec::new(&env);
+        timelocks.push_back(Self::get_timelock_deadline(init_time, STAGE_FINALITY, rescue_delay));
+        timelocks.push_back(Self::get_timelock_deadline(init_time, STAGE_SRC_WITHDRAWAL, rescue_delay));
+        timelocks.push_back(Self::get_timelock_deadline(init_time, STAGE_SRC_PUBLIC_WITHDRAWAL, rescue_delay));
+        timelocks.push_back(Self::get_timelock_deadline(init_time, STAGE_SRC_CANCELLATION, rescue_delay));
+        timelocks.push_back(Self::get_timelock_deadline(init_time, STAGE_SRC_PUBLIC_CANCELLATION, rescue_delay));
 
         // Compute order hash for deterministic identification
         let order_hash = Self::compute_order_hash(
