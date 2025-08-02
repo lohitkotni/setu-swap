@@ -219,8 +219,8 @@ impl EscrowContract {
             panic!("Escrow already finalized");
         }
 
-        // Verify preimage - using SHA256 as per original contract
-        let computed_hash = env.crypto().sha256(&preimage).to_bytes();
+        // Verify preimage - using keccak256 as per original contract
+        let computed_hash = env.crypto().keccak256(&preimage).to_bytes();
         if computed_hash != escrow.hashlock.value {
             panic!("Invalid preimage");
         }
@@ -401,7 +401,7 @@ impl EscrowContract {
         }
 
         // Verify preimage
-        let computed_hash = env.crypto().sha256(&preimage).to_bytes();
+        let computed_hash = env.crypto().keccak256(&preimage).to_bytes();
         if computed_hash != escrow.hashlock.value {
             panic!("Invalid preimage");
         }
@@ -592,7 +592,7 @@ impl EscrowContract {
         data.append(&timelocks.to_xdr(env));
         data.append(&is_src.to_xdr(env));
     
-        env.crypto().sha256(&data).to_bytes()
+        env.crypto().keccak256(&data).to_bytes()
     }
 
     /// Helper function to compute timelock deadline
@@ -606,4 +606,35 @@ impl EscrowContract {
             _ => panic!("Invalid stage"),
         }
     }
+
+    pub fn get_current_stage(env: Env, order_hash: BytesN<32>) -> u32 {
+        let escrow_key = DataKey::Escrow(order_hash);
+        
+        if !env.storage().persistent().has(&escrow_key) {
+            panic!("Escrow does not exist");
+        }
+     
+        let escrow: Escrow = env.storage().persistent().get(&escrow_key).unwrap();
+        let current_time = env.ledger().timestamp();
+     
+        let finality_time = escrow.timelocks.get(STAGE_FINALITY).unwrap();
+        let withdrawal_time = escrow.timelocks.get(STAGE_SRC_WITHDRAWAL).unwrap();
+        let public_withdrawal_time = escrow.timelocks.get(STAGE_SRC_PUBLIC_WITHDRAWAL).unwrap();
+        let cancellation_time = escrow.timelocks.get(STAGE_SRC_CANCELLATION).unwrap();
+        let public_cancellation_time = escrow.timelocks.get(STAGE_SRC_PUBLIC_CANCELLATION).unwrap();
+     
+        if current_time < finality_time {
+            STAGE_FINALITY
+        } else if current_time < withdrawal_time {
+            STAGE_FINALITY
+        } else if current_time < public_withdrawal_time {
+            STAGE_SRC_WITHDRAWAL
+        } else if current_time < cancellation_time {
+            STAGE_SRC_PUBLIC_WITHDRAWAL
+        } else if current_time < public_cancellation_time {
+            STAGE_SRC_CANCELLATION
+        } else {
+            STAGE_SRC_PUBLIC_CANCELLATION
+        }
+     }
 }
