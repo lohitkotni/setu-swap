@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              String     @id @default(cuid())
+  salt            String     @db.VarChar(255)
+  maker           String     @db.VarChar(255)
+  taker           String?    @db.VarChar(255)
+  makingAmount String?        @db.VarChar(255)
+  takingAmount String?        @db.VarChar(255)
+  r               String     @db.VarChar(255)
+  vs              String     @db.VarChar(255)
+  hashlock        String?    @db.VarChar(255)
+  orderHash       String     @unique @db.VarChar(255)
+
+  
+  // New fields
+  makerTraits     Int        @default(0)
+  sourceChainId   Int        @default(1)
+  destinationChainId Int     @default(4121)
+  makerBalance    String?    // Could use Decimal if preferred
+  
+  // Status and timestamps
+  status          OrderStatus @default(OPEN)
+  createdAt       DateTime   @default(now()) @db.Timestamptz
+  updatedAt       DateTime   @updatedAt @db.Timestamptz
+  expiresAt       DateTime?  @db.Timestamptz
+  
+  // Relation to fills
+  fills           OrderFill[]
+  
+  @@index([maker])
+  @@index([orderHash])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([sourceChainId])
+  @@index([destinationChainId])
+  @@map("orders")
+}
+
+model OrderFill {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  filledBy    String   @db.VarChar(42)
+  filledAmount Decimal @db.Decimal(78, 18)
+  txHash      String   @db.VarChar(255)
+  blockNumber Int
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  
+  @@index([orderId])
+  @@index([filledBy])
+  @@index([txHash])
+  @@index([blockNumber])
+  @@map("order_fills")
+}
+
+enum OrderStatus {
+  OPEN
+  FILLED
+  CANCELLED
+  EXPIRED
+}
