@@ -15,6 +15,7 @@ async function listActiveOrders() {
     orders.forEach((order, index) => {
       console.log(chalk.blue(`Order #${index + 1}:`));
       console.log(`Order Hash: ${order.orderHash}`);
+      console.log(`Hashlock: ${order.hashlock}`);
       console.log(`Maker: ${order.maker}`);
       console.log(`Making Amount: ${order.makingAmount}`);
       console.log(`Taking Amount: ${order.takingAmount}`);
