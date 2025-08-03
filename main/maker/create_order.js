@@ -17,8 +17,8 @@ async function main() {
     name: "Swap type",
     message: "Select the type of swap you want to perform",
     choices: [
-      { title: "Stellar to Ethereum", value: "stellar_to_ethereum" },
       { title: "Ethereum to Stellar", value: "ethereum_to_stellar" },
+      { title: "Stellar to Ethereum", value: "stellar_to_ethereum" },
     ],
   });
   if (response["Swap type"] === "stellar_to_ethereum") {
