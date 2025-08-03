@@ -8,23 +8,22 @@ datasource db {
 }
 
 model Order {
-  id              String     @id @default(cuid())
+  id              Int        @id @default(autoincrement())
   salt            String     @db.VarChar(255)
   maker           String     @db.VarChar(255)
   taker           String?    @db.VarChar(255)
-  makingAmount String?        @db.VarChar(255)
-  takingAmount String?        @db.VarChar(255)
+  makingAmount    String?    @db.VarChar(255)
+  takingAmount    String?    @db.VarChar(255)
   r               String     @db.VarChar(255)
   vs              String     @db.VarChar(255)
   hashlock        String?    @db.VarChar(255)
   orderHash       String     @unique @db.VarChar(255)
-
   
   // New fields
   makerTraits     Int        @default(0)
   sourceChainId   Int        @default(1)
   destinationChainId Int     @default(4121)
-  makerBalance    String?    // Could use Decimal if preferred
+  makerBalance    String?    @db.VarChar(255)
   
   // Status and timestamps
   status          OrderStatus @default(OPEN)
@@ -45,8 +44,8 @@ model Order {
 }
 
 model OrderFill {
-  id          String   @id @default(cuid())
-  orderId     String
+  id          Int      @id @default(autoincrement())
+  orderId     Int      // Changed to match Order.id type
   order       Order    @relation(fields: [orderId], references: [id])
   filledBy    String   @db.VarChar(42)
   filledAmount Decimal @db.Decimal(78, 18)

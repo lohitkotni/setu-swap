@@ -1,7 +1,7 @@
 import prompts from "prompts";
 import chalk from "chalk";
 import ora from "ora";
-import { ethereumToStellar } from "./ethereum_to_stellar.js";
+import { ethereumToStellar } from "../core/ethereum_to_stellar.js";
 
 async function main() {
   console.log(chalk.cyan("Welcome to the Setu Swap CLI"));
